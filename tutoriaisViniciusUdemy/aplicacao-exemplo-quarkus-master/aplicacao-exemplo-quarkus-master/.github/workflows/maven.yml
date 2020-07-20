@@ -1,0 +1,40 @@
+name: javaci
+on:
+  push:
+    branches: 
+      - master
+  pull_request:
+    branches: 
+      - master
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        java: [10, 11, 12, 13]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Java
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.java }}
+    - name: Cache Maven
+      uses: actions/cache@v1
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    - name: Validação de formatação
+      run: mvn formatter:validate -Djava-version=${{ matrix.java }} -Dmaven.compiler.compilerVersion=${{ matrix.java }} -Dmaven.compiler.release=${{ matrix.java }} -B -V
+    - name: Validação de imports
+      run: mvn impsort:check -Djava-version=${{ matrix.java }} -Dmaven.compiler.compilerVersion=${{ matrix.java }} -Dmaven.compiler.release=${{ matrix.java }} -B -V      
+    - name: Testes de unidade
+      run: mvn clean test -DskipMutationTests -DskipQuarkusTests -Djava-version=${{ matrix.java }} -Dmaven.compiler.compilerVersion=${{ matrix.java }} -Dmaven.compiler.release=${{ matrix.java }} -B -V
+    - name: Testes de mutação
+      run: mvn clean test -DskipUnitTests -DskipQuarkusTests -Djava-version=${{ matrix.java }} -Dmaven.compiler.compilerVersion=${{ matrix.java }} -Dmaven.compiler.release=${{ matrix.java }} -B -V
+    - name: Testes de Quarkus
+      run: mvn clean test -DskipMutationTests -DskipUnitTests -Djava-version=${{ matrix.java }} -Dmaven.compiler.compilerVersion=${{ matrix.java }} -Dmaven.compiler.release=${{ matrix.java }} -B -V      
+    - name: Compilação e Empacotamento
+      run: mvn clean package -DskipTests -DskipPitest -Dmaven.javadoc.skip=true -Djava-version=${{ matrix.java }} -Dmaven.compiler.compilerVersion=${{ matrix.java }} -Dmaven.compiler.release=${{ matrix.java }} -B -V

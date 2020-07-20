@@ -1,0 +1,26 @@
+name: sonar
+on:
+  push: 
+    branches:
+      - master
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Java
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: Cache Maven
+      uses: actions/cache@v1
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    - name: Sonar
+      run: mvn clean package sonar:sonar -DskipPitest -Djava-version=11 -Dmaven.compiler.compilerVersion=11 -Dmaven.compiler.release=11 -B -V
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.loginsonar }}
